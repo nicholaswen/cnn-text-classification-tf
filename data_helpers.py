@@ -1,6 +1,6 @@
 import numpy as np
 import re
-
+import pandas as pd
 
 def clean_str(string):
     """
@@ -21,6 +21,34 @@ def clean_str(string):
     string = re.sub(r"\?", " \? ", string)
     string = re.sub(r"\s{2,}", " ", string)
     return string.strip().lower()
+
+def load_data_sarc(input_file, training):
+    reddit = pd.read_csv(input_file)
+
+    labels = reddit['label'].values
+    labels = [[0, 1] if l is np.equal(1, l) else [1, 0] for l in labels]
+    train_labels, test_labels = labels[:677218], labels[677219:]
+
+    # Process data
+    text = reddit['comment'].values
+    train_text, test_text = text[:677218], text[677219:]
+
+    return [train_text, test_labels] if training else [test_text, test_labels]
+
+def load_data_ghosh(input_file):
+    with open(input_file) as f:
+        twitter = f.readlines()
+    twitter = [x.strip() for x in twitter]
+
+    twitter = pd.DataFrame(twitter)
+
+    new = twitter[0].str.split("\t", n = 2, expand = True)
+    twitter_labels = new[1]
+    twitter_text = new[2]
+
+    twitter_labels = [[0, 1] if l is '1' else [1, 0] for l in twitter_labels]
+
+    return [twitter_text, twitter_labels]
 
 
 def load_data_and_labels(positive_data_file, negative_data_file):
@@ -61,3 +89,6 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_size)
             yield shuffled_data[start_index:end_index]
+
+#load_data_sarc('data/train-balanced-sarcasm.csv')
+#load_data_ghosh('data/ghosh/train.txt')
