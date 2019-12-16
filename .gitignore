@@ -67,3 +67,8 @@ target/
 ### IPythonNotebook ###
 # Temporary data
 .ipynb_checkpoints/
+
+.DS_STORE
+*/.DS_Store
+
+data/*
