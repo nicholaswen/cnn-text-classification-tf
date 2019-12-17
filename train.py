@@ -13,9 +13,8 @@ from tensorflow.contrib import learn
 # ==================================================
 
 # Data loading params
-tf.flags.DEFINE_float("dev_sample_percentage", .1, "Percentage of the training data to use for validation")
-tf.flags.DEFINE_string("positive_data_file", "./data/rt-polaritydata/rt-polarity.pos", "Data source for the positive data.")
-tf.flags.DEFINE_string("negative_data_file", "./data/rt-polaritydata/rt-polarity.neg", "Data source for the negative data.")
+tf.flags.DEFINE_float("dev_sample_percentage", 0.05, "Percentage of the training data to use for validation")
+tf.flags.DEFINE_string("dataset", "rt-polarity", "An option of datasets from: rt-polarity, sarc, and ghosh")
 
 # Model Hyperparameters
 tf.flags.DEFINE_integer("embedding_dim", 128, "Dimensionality of character embedding (default: 128)")
@@ -30,6 +29,8 @@ tf.flags.DEFINE_integer("num_epochs", 200, "Number of training epochs (default: 
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 tf.flags.DEFINE_integer("num_checkpoints", 5, "Number of checkpoints to store (default: 5)")
+
+tf.flags.DEFINE_float("learning_rate", 1e-3, "Learning rate for Adam optimizer (default: 1e-3)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
@@ -47,13 +48,19 @@ def preprocess():
 
     # Load data
     print("Loading data...")
-    x_text, y = data_helpers.load_data_and_labels(FLAGS.positive_data_file, FLAGS.negative_data_file)
-
+   
+    print(FLAGS.dataset) 
+    if FLAGS.dataset == 'rt-polarity':
+        x_text, y = data_helpers.load_data_and_labels('data/rt-polaritydata/rt-polarity.pos', 'data/rt-polaritydata/rt-polarity.neg')
+    elif FLAGS.dataset == 'sarc':
+        x_text, y = data_helpers.load_data_sarc('data/train-balanced-sarcasm.csv', training=True)
+    elif FLAGS.dataset == 'ghosh':
+        x_text, y = data_helpers.load_data_ghosh('data/ghosh/train.txt')
     # Build vocabulary
     max_document_length = max([len(x.split(" ")) for x in x_text])
     vocab_processor = learn.preprocessing.VocabularyProcessor(max_document_length)
     x = np.array(list(vocab_processor.fit_transform(x_text)))
-
+    
     # Randomly shuffle data
     np.random.seed(10)
     shuffle_indices = np.random.permutation(np.arange(len(y)))
@@ -65,9 +72,6 @@ def preprocess():
     dev_sample_index = -1 * int(FLAGS.dev_sample_percentage * float(len(y)))
     x_train, x_dev = x_shuffled[:dev_sample_index], x_shuffled[dev_sample_index:]
     y_train, y_dev = y_shuffled[:dev_sample_index], y_shuffled[dev_sample_index:]
-
-    del x, y, x_shuffled, y_shuffled
-
     print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
     print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
     return x_train, y_train, vocab_processor, x_dev, y_dev
@@ -93,7 +97,7 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
 
             # Define Training procedure
             global_step = tf.Variable(0, name="global_step", trainable=False)
-            optimizer = tf.train.AdamOptimizer(1e-3)
+            optimizer = tf.train.AdamOptimizer(FLAGS.learning_rate)
             grads_and_vars = optimizer.compute_gradients(cnn.loss)
             train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 
@@ -171,7 +175,23 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                 print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
                 if writer:
                     writer.add_summary(summaries, step)
+            
+            for epoch in range(FLAGS.num_epochs):
+                print("Epoch: %d" % epoch)
+                batches = data_helpers.batch_iter_one_epoch(list(zip(x_train, y_train)), FLAGS.batch_size)
+                for batch in batches:
+                    x_batch, y_batch = zip(*batch)
+                    train_step(x_batch, y_batch)
+                    current_step = tf.train.global_step(sess, global_step)
+                print("\nEvaluation:")
+                print(len(x_dev))
+                print(len(y_dev))
+                dev_step(x_dev, y_dev, writer=dev_summary_writer)
+                print("")
 
+                path = saver.save(sess, checkpoint_prefix, global_step=current_step)
+                print("Saved model checkpoint to {}\n".format(path))
+            """
             # Generate batches
             batches = data_helpers.batch_iter(
                 list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
@@ -187,7 +207,7 @@ def train(x_train, y_train, vocab_processor, x_dev, y_dev):
                 if current_step % FLAGS.checkpoint_every == 0:
                     path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                     print("Saved model checkpoint to {}\n".format(path))
-
+            """
 def main(argv=None):
     x_train, y_train, vocab_processor, x_dev, y_dev = preprocess()
     train(x_train, y_train, vocab_processor, x_dev, y_dev)
