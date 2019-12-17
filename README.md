@@ -3,7 +3,9 @@ This code was adapted from Denny Britz's implementation of a CNN for Text Classi
 One key difference is that there are two additional datasets that can be used with this code: Reddit dataset called SARC ( Self-Annotated Reddit Corpus) and Debanjan Ghosh's Twitter sarcasm dataset.
 
 Download these files from here:
+
 Twitter: https://drive.google.com/drive/folders/1-AD928kZess59nSsClDkWfagu8ErPaOT?usp=sharing
+
 Reddit: https://drive.google.com/file/d/1CBWn5nSaKHaXrZNVE4R1XdWg8vbsB0AC/view?usp=sharing
 
 Then place them in the data folder before running and make sure to add the dataset parameter to each of the commands
