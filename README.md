@@ -1,6 +1,23 @@
-**[This code belongs to the "Implementing a CNN for Text Classification in Tensorflow" blog post.](http://www.wildml.com/2015/12/implementing-a-cnn-for-text-classification-in-tensorflow/)**
+This code was adapted from Denny Britz's implementation of a CNN for Text Classification, which can be found here https://github.com/dennybritz/cnn-text-classification-tf
 
-It is slightly simplified implementation of Kim's [Convolutional Neural Networks for Sentence Classification](http://arxiv.org/abs/1408.5882) paper in Tensorflow.
+One key difference is that there are two additional datasets that can be used with this code: Reddit dataset called SARC ( Self-Annotated Reddit Corpus) and Debanjan Ghosh's Twitter sarcasm dataset.
+
+Download these files from here:
+Twitter: https://drive.google.com/drive/folders/1-AD928kZess59nSsClDkWfagu8ErPaOT?usp=sharing
+Reddit: https://drive.google.com/file/d/1CBWn5nSaKHaXrZNVE4R1XdWg8vbsB0AC/view?usp=sharing
+
+Then place them in the data folder before running and make sure to add the dataset parameter to each of the commands
+
+For Twitter data
+```
+python train.py --dataset=ghosh
+python eval.py --eval_train --checkpoint_dir="./runs/1459637919/checkpoints/ --dataset=ghosh
+```
+For Reddit data
+```
+python train.py --dataset=sarc
+python eval.py --eval_train --checkpoint_dir="./runs/1459637919/checkpoints/ --dataset=sarc
+```
 
 ## Requirements
 
@@ -50,13 +67,13 @@ optional arguments:
 Train:
 
 ```bash
-./train.py
+./train.py --dataset=ghosh
 ```
 
 ## Evaluating
 
 ```bash
-./eval.py --eval_train --checkpoint_dir="./runs/1459637919/checkpoints/"
+./eval.py --eval_train --checkpoint_dir="./runs/1459637919/checkpoints/ --dataset=ghosh"
 ```
 
 Replace the checkpoint dir with the output from the training. To use your own data, change the `eval.py` script to load your data.
